@@ -1,0 +1,6 @@
+security
+werkzeug
+flask
+Flask-RESTful == 0.3.8
+request
+Flask-JWT
