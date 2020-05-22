@@ -23,51 +23,34 @@ class Book(Resource):
         return {'message': 'Book is not available'}, 404
 
     def post(self, name):
-        book = BookModel.find_by_name(name)
-        if book:
-            return {'message': 'A book with name {} already exists'.format(name)}, 400
-
+        if BookModel.find_by_name(name):
+            return {'message': 'A book with name {} is available'.format(name)}, 400
         request_data = Book.parser.parse_args()
-        new_book = BookModel(name, request_data['price'])
-
+        book = BookModel(name, request_data['price'])
         try:
-            new_book.insert()
+            book.save_to_db()
         except:
-            return {'message': 'An error occurred while inserting.'}, 500
-
-        return new_book.json(), 201
+            return {'message': 'Error occurred while saving to db'}, 500
+        return book.json(), 201
 
     def delete(self, name):
-        if BookModel.find_by_name(name):
-            connection = sqlite3.connect('data.db')
-            cursor = connection.cursor()
-
-            query = "DELETE FROM books WHERE name = ?"
-            cursor.execute(query, (name,))
-
-            connection.close()
-            return {'message': 'Book deleted successfully'}
-        else:
-            return {'message': 'Book does not exist'}
+        book = Book.find_by_name(name)
+        if book:
+            book.delete_from_db()
+        return {'message': 'book deleted'}
 
     def put(self, name):
         request_data = Book.parser.parse_args()
         book = BookModel.find_by_name(name)
-        new_book = BookModel(name, request_data['price'])
 
-        if book:
-            try:
-                new_book.update()  # same as BookModel.insert(new_book) but since new book is an item model rather
-                # than a dict it can be inserted this way
-            except:
-                return {'message': 'An error occurred while updating the book'}, 500
+        if book is None:
+            book = BookModel(name, request_data['price'])
         else:
-            try:
-                new_book.insert()
-            except:
-                return {'message': 'An error occurred while updating the book'}, 500
+            book.price = request_data['price']
 
-        return new_book.json()
+        book.save_to_db()
+
+        return book.json()
 
 
 class Bookslist(Resource):
